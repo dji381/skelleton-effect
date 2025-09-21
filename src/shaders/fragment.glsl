@@ -1,3 +1,5 @@
+#include "../../lygia/generative/pnoise.glsl"
+
 uniform vec3 uPrimaryColor;
 uniform vec3 uSecondaryColor;
 uniform vec3 uSkullColor;
@@ -75,12 +77,12 @@ void main() {
 
     //Texure
     vec2 invertedUvs = vUvs.yx;
-    float d = simpleNoise(invertedUvs + uTime * 0.1, 7.0);
-    vec4 texel = texture2D(uTexture, fract(invertedUvs  + vec2(uTime * 0.1, -uTime * 0.1) + d));
+    float d2 = pnoise(vec3(invertedUvs * 2.0,uTime * 0.1) , vec3(2.0,2.0,2.0))* 0.5 + 0.5;
+    vec4 texel = texture2D(uTexture, fract(invertedUvs  + vec2(uTime * 0.1 + d2, -uTime * 0.1 + d2) ));
     vec3 skullColor = texel.xyz * uSkullColor;
     skullColor *= 25.0;
 
-    vec4 tex = texture2D(uTexture,invertedUvs * 2.0  + fract(vec2(-uTime * 0.1, -uTime * 0.1)  + d ));
+    vec4 tex = texture2D(uTexture,invertedUvs * 2.0  + fract(vec2(-uTime * 0.1 + d2 * 1.2, -uTime * 0.1 + d2 * 1.2)   ));
     vec3 skullC = tex.xyz * uSecondaryColor;
 
     //Glowing Fresnel
