@@ -11,9 +11,13 @@ const HalloweenAttack = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shaderRef = useRef<any>(null!);
   const texture = useTexture("texture/skull-texture.jpg");
+  const vfxTexture = useTexture("texture/vfx2.png");
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.minFilter = THREE.NearestFilter
+  vfxTexture.wrapS = THREE.RepeatWrapping;
+  vfxTexture.wrapT = THREE.RepeatWrapping;
+  vfxTexture.minFilter = THREE.NearestFilter
   const {
     uPrimaryColor,
     uSecondaryColor,
@@ -26,13 +30,13 @@ const HalloweenAttack = () => {
     uSecondaryColor: "#502f58",
     uSkullColor: '#180a2e',
     uFresnelPower: {
-      value: 5.0,
+      value: 4.0,
       min: 1.0,
       max: 10,
       step: 1.0,
     },
     uFresnelColorStep: {
-      value: 0.3,
+      value: 0.1,
       min: 0.0,
       max: 1.0,
       step: 0.1,
@@ -40,7 +44,7 @@ const HalloweenAttack = () => {
     uGlowPower: {
       value: 11.0,
       min: 1.0,
-      max: 20,
+      max: 30,
       step: 1.0,
     },
   });
@@ -60,6 +64,7 @@ const HalloweenAttack = () => {
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         transparent={true}
+        alphaTest={0.1}
         uniforms={{
           uPrimaryColor: { value: new THREE.Color(uPrimaryColor) },
           uSecondaryColor: { value: new THREE.Color(uSecondaryColor) },
@@ -68,6 +73,7 @@ const HalloweenAttack = () => {
           uGlowPower: { value: uGlowPower },
           uFresnelColorStep: { value: uFresnelColorStep },
           uTexture: { value: texture },
+          uVfxTexture: { value: vfxTexture },
           uTime:{value:0.0}
 
         }}

@@ -8,17 +8,10 @@ uniform float uGlowPower;
 uniform float uFresnelColorStep;
 uniform float uTime;
 uniform sampler2D uTexture;
+uniform sampler2D uVfxTexture;
 varying vec3 vNormals;
 varying vec3 vPosition;
 varying vec2 vUvs;
-float inverseLerp(float v, float minValue, float maxValue) {
-    return (v - minValue) / (maxValue - minValue);
-}
-
-float remap(float v, float inMin, float inMax, float outMin, float outMax) {
-    float t = inverseLerp(v, inMin, inMax);
-    return mix(outMin, outMax, t);
-}
 
 float fresnel(float amount, vec3 normal, vec3 view) {
     return pow(1.0 - clamp(dot(normalize(normal), normalize(view)), 0.0, 1.0), amount);
@@ -37,12 +30,15 @@ void main() {
     vec3 skullColor = texel.xyz * uSkullColor;
     skullColor *= 25.0;
     //Dark skull
-    vec4 tex = texture2D(uTexture, invertedUvs * 2.0 + fract(vec2(-uTime * 0.1 + d2 * 1.2 + d * 0.5, -uTime * 0.1 + d2 * 1.2)));
+    vec4 tex = texture2D(uTexture, invertedUvs + fract(vec2(-uTime * 0.2 + d2, -uTime * 0.3 + d2 * 1.8)));
     vec3 skullC = tex.xyz * uSecondaryColor;
-
+    vec4 skullBlend = vec4(skullColor, 1.0) + vec4(skullC, 1.0);
+    //Vfx Texture
+    vec3 vfx = texture2D(uVfxTexture,fract((vUvs * 2.0) + vec2(uTime,0.0))).xyz;
+    vec4 vfxColor = vec4(vec3(vfx * uSecondaryColor),vfx.r);
     //Glowing Fresnel
     float fresnel = fresnel(uFresnelPower, viewDir, normals);
     vec3 glowColor = uPrimaryColor * fresnel;
     csm_Emissive = vec3(glowColor * uGlowPower);
-    csm_DiffuseColor = vec4(skullColor, 1.0) + vec4(skullC, 1.0);
+    csm_DiffuseColor = mix(skullBlend,vfxColor,smoothstep(0.0,uFresnelColorStep,fresnel));
 }
