@@ -11,64 +11,17 @@ uniform sampler2D uTexture;
 varying vec3 vNormals;
 varying vec3 vPosition;
 varying vec2 vUvs;
-
-float randomValue(vec2 uv) {
-    return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+float inverseLerp(float v, float minValue, float maxValue) {
+    return (v - minValue) / (maxValue - minValue);
 }
 
-float interpolate(float a, float b, float t) {
-    return mix(a, b, t); // mix() = (1-t)*a + t*b
-}
-
-float valueNoise(vec2 uv) {
-    vec2 i = floor(uv);
-    vec2 f = fract(uv);
-    f = f * f * (3.0 - 2.0 * f); // easing
-
-    vec2 c0 = i + vec2(0.0, 0.0);
-    vec2 c1 = i + vec2(1.0, 0.0);
-    vec2 c2 = i + vec2(0.0, 1.0);
-    vec2 c3 = i + vec2(1.0, 1.0);
-
-    float r0 = randomValue(c0);
-    float r1 = randomValue(c1);
-    float r2 = randomValue(c2);
-    float r3 = randomValue(c3);
-
-    float bottom = interpolate(r0, r1, f.x);
-    float top = interpolate(r2, r3, f.x);
-    return interpolate(bottom, top, f.y);
-}
-
-// --- SimpleNoise 2D avec UV et Scale ---
-float simpleNoise(vec2 uv, float scale) {
-    float t = 0.0;
-
-    float freq = pow(2.0, 0.0);
-    float amp = pow(0.5, 3.0 - 0.0);
-    t += valueNoise(uv * scale / freq) * amp;
-
-    freq = pow(2.0, 1.0);
-    amp = pow(0.5, 3.0 - 1.0);
-    t += valueNoise(uv * scale / freq) * amp;
-
-    freq = pow(2.0, 2.0);
-    amp = pow(0.5, 3.0 - 2.0);
-    t += valueNoise(uv * scale / freq) * amp;
-
-    return t;
+float remap(float v, float inMin, float inMax, float outMin, float outMax) {
+    float t = inverseLerp(v, inMin, inMax);
+    return mix(outMin, outMax, t);
 }
 
 float fresnel(float amount, vec3 normal, vec3 view) {
     return pow(1.0 - clamp(dot(normalize(normal), normalize(view)), 0.0, 1.0), amount);
-}
-
-vec2 rotateUV(vec2 uv, float rotation) {
-    float mid = 0.5;
-    return vec2(
-        cos(rotation) * (uv.x - mid) + sin(rotation) * (uv.y - mid) + mid,
-        cos(rotation) * (uv.y - mid) - sin(rotation) * (uv.x - mid) + mid
-    );
 }
 
 void main() {
@@ -77,18 +30,19 @@ void main() {
 
     //Texure
     vec2 invertedUvs = vUvs.yx;
-    float d2 = pnoise(vec3(invertedUvs * 2.0,uTime * 0.1) , vec3(2.0,2.0,2.0))* 0.5 + 0.5;
-    vec4 texel = texture2D(uTexture, fract(invertedUvs  + vec2(uTime * 0.1 + d2, -uTime * 0.1 + d2) ));
+    float d = sin(uTime);
+    float d2 = pnoise(vec3(invertedUvs * 2.0, uTime * 0.1), vec3(2.0, 2.0, 2.0)) * 0.5 + 0.5;
+    //Glowing skull
+    vec4 texel = texture2D(uTexture, fract(invertedUvs + vec2(uTime * 0.1 + d2, -uTime * 0.1 + d2)));
     vec3 skullColor = texel.xyz * uSkullColor;
     skullColor *= 25.0;
-
-    vec4 tex = texture2D(uTexture,invertedUvs * 2.0  + fract(vec2(-uTime * 0.1 + d2 * 1.2, -uTime * 0.1 + d2 * 1.2)   ));
+    //Dark skull
+    vec4 tex = texture2D(uTexture, invertedUvs * 2.0 + fract(vec2(-uTime * 0.1 + d2 * 1.2 + d * 0.5, -uTime * 0.1 + d2 * 1.2)));
     vec3 skullC = tex.xyz * uSecondaryColor;
 
     //Glowing Fresnel
     float fresnel = fresnel(uFresnelPower, viewDir, normals);
     vec3 glowColor = uPrimaryColor * fresnel;
     csm_Emissive = vec3(glowColor * uGlowPower);
-    csm_DiffuseColor = vec4(skullColor, 1.0) + vec4(skullC,1.0);
-    //csm_DiffuseColor = vec4(skullColor,1.0);
+    csm_DiffuseColor = vec4(skullColor, 1.0) + vec4(skullC, 1.0);
 }
